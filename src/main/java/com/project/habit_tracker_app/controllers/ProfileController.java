@@ -22,11 +22,7 @@ public class ProfileController {
         this.authenticatedUserUtil = authenticatedUserUtil;
     }
 
-    @GetMapping("/hello")
-    public ResponseEntity<String> hello(){
-        return ResponseEntity.ok("Hello...!!");
 
-    }
 
     @PutMapping("/updateProfile")
     public ResponseEntity<Profile> updateProfile(@RequestBody ProfileModificationDto profileModificationDto){
