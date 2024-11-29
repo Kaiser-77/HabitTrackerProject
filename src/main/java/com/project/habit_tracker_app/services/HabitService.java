@@ -2,12 +2,14 @@ package com.project.habit_tracker_app.services;
 
 import com.project.habit_tracker_app.dto.HabitDto;
 import com.project.habit_tracker_app.dto.HabitModificationDto;
+import com.project.habit_tracker_app.exceptions.InvalidOperationException;
+import com.project.habit_tracker_app.exceptions.ResourceNotFoundException;
+import com.project.habit_tracker_app.exceptions.UnauthorizedActionException;
 import com.project.habit_tracker_app.responses.HabitPageResponse;
 import com.project.habit_tracker_app.entities.*;
 import com.project.habit_tracker_app.repositories.HabitRecordRepository;
 import com.project.habit_tracker_app.repositories.HabitRepository;
 import com.project.habit_tracker_app.repositories.ProfileRepository;
-import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -39,7 +41,7 @@ public class HabitService {
 
 
     public Habit getHabitById(Long habitId){
-        return habitRepository.findById(habitId).orElseThrow(()-> new RuntimeException("no such habit found"));
+        return habitRepository.findById(habitId).orElseThrow(()-> new ResourceNotFoundException("no such habit found"));
     }
 
 
@@ -88,7 +90,7 @@ public class HabitService {
 
 //NEED TO REWRITE------------------------------------------------------------------------------------------------------------------
     public Habit addHabit(HabitModificationDto habitModificationDto, Long ownerId) {
-        Profile profile = profileRepository.findById(ownerId).orElseThrow(()-> new RuntimeException("profile not found"));
+        Profile profile = profileRepository.findById(ownerId).orElseThrow(()-> new ResourceNotFoundException("profile not found"));
         Habit habit = new Habit();
         habit.setPrivacy(habitModificationDto.getPrivacy());
         habit.setName(habitModificationDto.getName());
@@ -106,7 +108,7 @@ public class HabitService {
 
     public Habit updateHabit(Long habitId, HabitModificationDto updatedHabit, Long ownerId) {
         // Find the existing habit by ID
-        Habit habit = habitRepository.findById(habitId).orElseThrow(()-> new RuntimeException("no such habit or task found"));
+        Habit habit = habitRepository.findById(habitId).orElseThrow(()-> new ResourceNotFoundException("no such habit or task found"));
 
         if (habit.getProfileId().equals(ownerId)) {
 
@@ -117,20 +119,20 @@ public class HabitService {
 
             return habitRepository.save(habit);
         } else {
-            throw new RuntimeException("can't edit other people's habit");
+            throw new UnauthorizedActionException("can't edit other people's habit");
         }
     }
 
     
     public void deleteHabit(Long habitId, Long ownerId) {
-        Habit habit = habitRepository.findById(habitId).orElseThrow(()-> new EntityNotFoundException("habit not found"));
-        Profile profile = profileRepository.findById(habit.getProfileId()).orElseThrow(()->new RuntimeException("no such profile found with habit"));
+        Habit habit = habitRepository.findById(habitId).orElseThrow(()-> new ResourceNotFoundException("habit not found"));
+        Profile profile = profileRepository.findById(habit.getProfileId()).orElseThrow(()->new ResourceNotFoundException("no such profile found with habit"));
         if (habit.getProfileId().equals(ownerId)) {
             profile.getHabitIds().remove(habitId);
             habitRepository.delete(habit);
             profileRepository.save(profile);
         } else{
-            throw new RuntimeException("can't delete other's task or habit");
+            throw new UnauthorizedActionException("can't delete other's task or habit");
         }
     }
 
@@ -140,10 +142,10 @@ public class HabitService {
     public void updateStreakAndAddRecord(Long habitId, Long ownerId) {
 
         Habit habit = habitRepository.findById(habitId)
-                .orElseThrow(() -> new RuntimeException("Habit not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Habit not found"));
 
         if(!(habit.getProfileId().equals(ownerId))){
-            throw new RuntimeException("cant tick others profile");
+            throw new UnauthorizedActionException("cant Tick others habit ot task from their profile");
         }
         // Get the latest record if exists
         HabitRecord latestRecord = habitRecordRepository.findTopByHabitOrderByRecordDateDesc(habit);
@@ -154,8 +156,7 @@ public class HabitService {
                 latestRecord.getRecordDate().toLocalDate().isEqual(today.toLocalDate());
         if (recordExistsToday) {
             // If a record for today already exists, do nothing or throw a message
-            System.out.println("Record for today already exists.");
-            return;
+            throw new InvalidOperationException("Record for today already exists.");
         }
 
         // Check if latest record was yesterday
@@ -186,7 +187,7 @@ public class HabitService {
 
 
     public List<HabitRecord> getHabitRecords(Long habitId){
-        Habit habit = habitRepository.findById(habitId).orElseThrow(()-> new RuntimeException("Habit not found"));
+        Habit habit = habitRepository.findById(habitId).orElseThrow(()-> new ResourceNotFoundException("Habit not found"));
         return habit.getRecords();
     }
 }

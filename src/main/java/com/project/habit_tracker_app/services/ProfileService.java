@@ -3,11 +3,12 @@ package com.project.habit_tracker_app.services;
 import com.project.habit_tracker_app.auth.repositories.UserRepository;
 import com.project.habit_tracker_app.dto.ProfileModificationDto;
 import com.project.habit_tracker_app.dto.ProfileDto;
+import com.project.habit_tracker_app.exceptions.InvalidOperationException;
+import com.project.habit_tracker_app.exceptions.ResourceNotFoundException;
 import com.project.habit_tracker_app.responses.ProfilePageResponse;
 import com.project.habit_tracker_app.entities.Follower;
 import com.project.habit_tracker_app.entities.Profile;
 import com.project.habit_tracker_app.repositories.*;
-import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -48,12 +49,12 @@ public class ProfileService {
     public void follow(Long userId, Long followingId){
         Optional<Follower> optionalFollower = followerRepository.findByUserIdAndFollowedId(userId,followingId);
         if (userId.equals(followingId)){
-            throw new RuntimeException("User can't follow themself");
+            throw new InvalidOperationException("User can't follow themself");
         } else if (optionalFollower.isPresent()){
-            throw new RuntimeException("Already Followed");
+            throw new InvalidOperationException("Already Followed");
         } else {
-            Profile followingProfile = profileRepository.findById(followingId).orElseThrow(()-> new RuntimeException("no such profile found"));
-            Profile profile = profileRepository.findById(userId).orElseThrow();
+            Profile followingProfile = profileRepository.findById(followingId).orElseThrow(()-> new ResourceNotFoundException("no such profile found"));
+            Profile profile = profileRepository.findById(userId).orElseThrow(()-> new ResourceNotFoundException(" profile not found to follow"));
             Follower follower = new Follower();
             follower.setUserId(userId);
             follower.setFollowedId(followingId);
@@ -69,8 +70,8 @@ public class ProfileService {
     }
 
     public void unFollow(Long userId, Long unfollowingId){
-        Profile unfollowingProfile = profileRepository.findById(unfollowingId).orElseThrow(()-> new RuntimeException("no such profile found"));
-        Profile profile = profileRepository.findById(userId).orElseThrow();
+        Profile unfollowingProfile = profileRepository.findById(unfollowingId).orElseThrow(()-> new ResourceNotFoundException("no such profile found"));
+        Profile profile = profileRepository.findById(userId).orElseThrow(()-> new ResourceNotFoundException(" profile not found"));
         profile.setFollowing(profile.getFollowing() - 1);
         unfollowingProfile.setFollowers(unfollowingProfile.getFollowers() - 1);
         profileRepository.save(profile);
@@ -144,7 +145,7 @@ public class ProfileService {
     
 
     public Profile getUserById(Long id) {
-        return profileRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Profile not found with id: " + id));
+        return profileRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Profile not found with id: " + id));
     }
 
 
@@ -175,7 +176,7 @@ public class ProfileService {
 
 
     public Profile updateProfile(ProfileModificationDto profileModificationDto, Long ownerId){
-        Profile profile = profileRepository.findById(ownerId).orElseThrow(()-> new RuntimeException("-----ERROR profile not found"));
+        Profile profile = profileRepository.findById(ownerId).orElseThrow(()-> new ResourceNotFoundException(" profile not found"));
         profile.setName(profileModificationDto.getName());
         profile.setAge(profileModificationDto.getAge());
         profile.setBio(profileModificationDto.getBio());
@@ -185,7 +186,7 @@ public class ProfileService {
 
     @Transactional
     public void deleteProfile(Long profileId) {
-        Profile profile = profileRepository.findById(profileId).orElseThrow();
+        Profile profile = profileRepository.findById(profileId).orElseThrow(()-> new ResourceNotFoundException(" profile not found"));
         // Adjust follow counts
         profileRepository.decrementFollowingCountByProfileId(profileId);
         profileRepository.decrementFollowersCountByProfileId(profileId);

@@ -2,6 +2,9 @@ package com.project.habit_tracker_app.services;
 
 import com.project.habit_tracker_app.dto.*;
 import com.project.habit_tracker_app.entities.*;
+import com.project.habit_tracker_app.exceptions.InvalidOperationException;
+import com.project.habit_tracker_app.exceptions.ResourceNotFoundException;
+import com.project.habit_tracker_app.exceptions.UnauthorizedActionException;
 import com.project.habit_tracker_app.repositories.CommentRepository;
 import com.project.habit_tracker_app.repositories.LikeRepository;
 import com.project.habit_tracker_app.repositories.PostRepository;
@@ -40,7 +43,7 @@ public class PostService {
 
     // setting id............need to rewrite code --------------------------------------------------------------------------------
     public Post addPost(PostModificationDto postModificationDto, Long ownerId){
-        Profile profile = profileRepository.findById(ownerId).orElseThrow(()-> new RuntimeException("no profile found"));
+        Profile profile = profileRepository.findById(ownerId).orElseThrow(()-> new ResourceNotFoundException("no profile found"));
 
         Post newPost = new Post();
         // picture to url
@@ -62,7 +65,7 @@ public class PostService {
     }
 
     public Post getPostById(Long postId){
-        return postRepository.findById(postId).orElseThrow(()-> new RuntimeException("post not found"));
+        return postRepository.findById(postId).orElseThrow(()-> new ResourceNotFoundException("post not found"));
     }
 
 
@@ -121,10 +124,10 @@ public class PostService {
 
 
     public void likePost(Long postId, Long ownerId){
-        Post post = postRepository.findById(postId).orElseThrow(()-> new EntityNotFoundException("no such post "));
+        Post post = postRepository.findById(postId).orElseThrow(()-> new ResourceNotFoundException("no such post "));
         Optional<Likes> optionalLikes = likeRepository.findByPostIdAndUserLikedId(postId,ownerId);
         if(optionalLikes.isPresent()){
-            throw new EntityNotFoundException("post already liked");
+            throw new InvalidOperationException("post already liked");
         }else {
             Likes like = new Likes();
             like.setPostId(postId);
@@ -139,7 +142,7 @@ public class PostService {
 
 //    @Transactional
     public void unLikePost(Long postId, Long ownerId){
-        Post post = postRepository.findById(postId).orElseThrow(()-> new EntityNotFoundException("no such post "));
+        Post post = postRepository.findById(postId).orElseThrow(()-> new ResourceNotFoundException("no such post "));
         Likes like = likeRepository.findByPostIdAndUserLikedId(postId,ownerId).orElseThrow(()-> new EntityNotFoundException("Not liked yet"));
         likeRepository.delete(like);
 
@@ -161,21 +164,21 @@ public class PostService {
             post.setCommentCount(post.getCommentCount() + 1);
             postRepository.save(post);
         }else {
-            throw new EntityNotFoundException("no such post found");
+            throw new ResourceNotFoundException("no such post found");
         }
     }
 
 //    @Transactional
     public void deleteComment(Long cmtId, Long ownerId){
-        Comment comment = commentRepository.findById(cmtId).orElseThrow(() -> new EntityNotFoundException("no comment founded"));
-        Post post = postRepository.findById(comment.getPostId()).orElseThrow(() -> new RuntimeException("post not found"));
+        Comment comment = commentRepository.findById(cmtId).orElseThrow(() -> new ResourceNotFoundException("no comment founded"));
+        Post post = postRepository.findById(comment.getPostId()).orElseThrow(() -> new ResourceNotFoundException("post not found"));
         if(comment.getUserCommentedId().equals(ownerId) || post.getProfileId().equals(ownerId)){
             commentRepository.delete(comment);
 
             post.setCommentCount(post.getCommentCount() - 1);
             postRepository.save(post);
         } else {
-            throw new RuntimeException("can't delete other's comment");
+            throw new UnauthorizedActionException("can't delete other's comment");
         }
 
     }
@@ -184,20 +187,20 @@ public class PostService {
 
     // update post
     public Post updatePost(Long postId, PostModificationDto postModificationDto, Long ownerId){
-        Post post = postRepository.findById(postId).orElseThrow(()-> new RuntimeException("post not found"));
+        Post post = postRepository.findById(postId).orElseThrow(()-> new ResourceNotFoundException("post not found"));
         if(post.getProfileId().equals(ownerId)) {
             post.setCaption(postModificationDto.getCaption());
             post.setPrivacy(postModificationDto.getPrivacy());
             return postRepository.save(post);
         } else{
-            throw new RuntimeException("can't edit other user's post");
+            throw new UnauthorizedActionException("can't edit other user's post");
         }
     }
 
     @Transactional
     public void deletePost(Long postId,Long ownerId) {
-        Post post = postRepository.findById(postId).orElseThrow(()-> new RuntimeException("post not found"));
-        Profile profile = profileRepository.findById(post.getProfileId()).orElseThrow(() -> new RuntimeException("--no profile found"));
+        Post post = postRepository.findById(postId).orElseThrow(()-> new ResourceNotFoundException("post not found"));
+        Profile profile = profileRepository.findById(post.getProfileId()).orElseThrow(() -> new ResourceNotFoundException("--no profile found"));
         if (profile.getId().equals(ownerId)){
             profile.getPostIds().remove(postId);
             likeRepository.deleteByPostId(postId);     //delete all associated rows in like table
@@ -205,7 +208,7 @@ public class PostService {
             postRepository.delete(post);
             profileRepository.save(profile);
         } else {
-            throw new RuntimeException("others post cant be deleted");
+            throw new UnauthorizedActionException("others post cant be deleted");
         }
     }
 
