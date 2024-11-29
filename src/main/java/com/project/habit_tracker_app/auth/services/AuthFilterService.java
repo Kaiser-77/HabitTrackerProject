@@ -1,6 +1,7 @@
 package com.project.habit_tracker_app.auth.services;
 
 
+import com.project.habit_tracker_app.exceptions.TokenBlacklistedException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -42,6 +43,12 @@ public class AuthFilterService extends OncePerRequestFilter {
 
         // extract JWT token
         jwt = authHeader.substring(7);
+
+        // ------------------------CHECK WHETHER JWT IS BLACKLISTED OR NOT-------------------------------------------------------------------------------------------------------------------------------------------
+        if (jwtService.isTokenBlacklisted(jwt)) {
+            throw new TokenBlacklistedException("Access token is invalid or expired");
+        }
+        //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
         // extract username from JWT
         username = jwtService.extractUsername(jwt);

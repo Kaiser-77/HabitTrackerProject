@@ -10,10 +10,10 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import java.security.Key;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
+
+import static com.project.habit_tracker_app.utils.AppConstant.JWT_EXPIRE_TIME;
 
 @Service
 public class JwtService {
@@ -62,7 +62,7 @@ public class JwtService {
                 .setClaims(extraClaims)
                 .setSubject(userDetails.getUsername())
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + 1800 * 1000)) //30min
+                .setExpiration(new Date(System.currentTimeMillis() + JWT_EXPIRE_TIME * 60 * 1000)) //30min
                 .signWith(getSignInKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
@@ -81,5 +81,26 @@ public class JwtService {
     // get expiration date from token
     private Date extractExpiration(String token) {
         return extractClaim(token, Claims::getExpiration);
+    }
+
+
+
+    // --- ADDITIONAL CODE ---------------------------------------------------------------------------------------------------------------------------
+    private final Set<String> blacklistedTokens = new HashSet<>();
+
+    public void blacklistAccessToken(String token) {
+        blacklistedTokens.add(token);
+    }
+
+    public boolean isTokenBlacklisted(String token) {
+        return blacklistedTokens.contains(token);
+    }
+
+    public String extractToken(String bearerToken) {
+        // Remove "Bearer " prefix if present
+        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
+            return bearerToken.substring(7);
+        }
+        return bearerToken;
     }
 }

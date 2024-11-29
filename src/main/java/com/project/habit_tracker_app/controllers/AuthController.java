@@ -12,6 +12,7 @@ import com.project.habit_tracker_app.auth.utils.RegisterRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -39,7 +40,7 @@ public class AuthController {
         return ResponseEntity.ok(authService.login(loginRequest));
     }
 
-    @PostMapping("/refresh")
+    @PostMapping("/refresh")// -------------------- REQUEST HEADER-------------------------
     public ResponseEntity<AuthResponse> refreshToken(@RequestBody RefreshTokenRequest refreshTokenRequest){
 
         RefreshToken refreshToken = refreshTokenService.verifyRefreshToken(refreshTokenRequest.getRefreshToken());
@@ -51,6 +52,18 @@ public class AuthController {
                 .accessToken(accessToken)
                 .refreshToken(refreshToken.getRefreshToken())
                 .build());
+    }
+
+
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(@RequestHeader("Authorization") String bearerToken,
+                                    @RequestHeader("X-Refresh-Token") String refreshToken) {
+
+        String accessToken = jwtService.extractToken(bearerToken);
+        jwtService.blacklistAccessToken(accessToken);
+        refreshTokenService.deleteRefreshToken(refreshToken);
+
+        return ResponseEntity.ok("Logged out successfully");
     }
 }
 

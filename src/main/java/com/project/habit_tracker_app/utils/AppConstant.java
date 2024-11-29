@@ -12,4 +12,9 @@ public class AppConstant {
     public static final String SORT_BY_PRIORITY = "priority";
 
     public static final String SORT_DIR = "desc";
+
+
+    public static final int JWT_EXPIRE_TIME = 30;           //  Minutes
+    public static final int REFRESHTOKEN_EXPIRE_TIME = 12;  //   Hours
+
 }
