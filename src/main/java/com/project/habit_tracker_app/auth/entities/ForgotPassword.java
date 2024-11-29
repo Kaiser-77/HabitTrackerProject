@@ -2,10 +2,7 @@ package com.project.habit_tracker_app.auth.entities;
 
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.util.Date;
 
@@ -13,7 +10,7 @@ import java.util.Date;
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
-@Builder
+@Setter
 public class ForgotPassword {
 
     @Id
@@ -25,6 +22,8 @@ public class ForgotPassword {
 
     @Column(nullable = false)
     private Date expirationTime;
+
+    private boolean otpVerified = false;
 
     @OneToOne
     private User user;
