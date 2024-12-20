@@ -97,17 +97,14 @@ public class PostService {
     }
 
 
-    public PostPageResponse getFeedPostWithPaginationAndSorting(List<Profile> followingProfiles, Integer pageNumber, Integer pageSize, String sortBy, String dir){
-        List<Long> profileIds = followingProfiles.stream()
-                .map(Profile::getId)
-                .toList();
+    public PostPageResponse getFeedPostWithPaginationAndSorting(List<Long> followingProfileIds, Integer pageNumber, Integer pageSize, String sortBy, String dir){
 
         Sort sort = dir.equalsIgnoreCase("asc") ? Sort.by(sortBy).ascending()
                                                                 : Sort.by(sortBy).descending();
 
         Pageable pageable = PageRequest.of(pageNumber,pageSize,sort);
 
-        Page<Post> postPages = postRepository.findByProfileIdInAndPrivacy(profileIds,Privacy.PUBLIC,pageable);
+        Page<Post> postPages = postRepository.findByProfileIdInAndPrivacy(followingProfileIds,Privacy.PUBLIC,pageable);
         List<Post> posts = postPages.getContent();
 
 

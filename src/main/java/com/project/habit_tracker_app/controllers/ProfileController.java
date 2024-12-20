@@ -1,5 +1,7 @@
 package com.project.habit_tracker_app.controllers;
 
+import com.project.habit_tracker_app.auth.services.JwtService;
+import com.project.habit_tracker_app.auth.services.RefreshTokenService;
 import com.project.habit_tracker_app.auth.utils.AuthenticatedUserUtil;
 import com.project.habit_tracker_app.dto.ProfileModificationDto;
 import com.project.habit_tracker_app.responses.ProfilePageResponse;
@@ -9,6 +11,8 @@ import com.project.habit_tracker_app.utils.AppConstant;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 
 @RestController
 public class ProfileController {
@@ -16,10 +20,14 @@ public class ProfileController {
 
     private final ProfileService profileService;
     private final AuthenticatedUserUtil authenticatedUserUtil;
+    private final JwtService jwtService;
+    private final RefreshTokenService refreshTokenService;
 
-    public ProfileController(ProfileService profileService, AuthenticatedUserUtil authenticatedUserUtil) {
+    public ProfileController(ProfileService profileService, AuthenticatedUserUtil authenticatedUserUtil, JwtService jwtService, RefreshTokenService refreshTokenService) {
         this.profileService = profileService;
         this.authenticatedUserUtil = authenticatedUserUtil;
+        this.jwtService = jwtService;
+        this.refreshTokenService = refreshTokenService;
     }
 
 
@@ -35,7 +43,8 @@ public class ProfileController {
                                                                  @RequestParam(defaultValue = AppConstant.PAGE_NUMBER, required = false) Integer pageNumber,
                                                                  @RequestParam(defaultValue = AppConstant.PAGE_SIZE_PROFILE, required = false) Integer pageSize){
 
-        return  ResponseEntity.ok(profileService.getFollowersWithPagination(userId,pageNumber,pageSize));
+        List<Long> followerIds = profileService.getFollowers(userId);
+        return  ResponseEntity.ok(profileService.getProfileDtoResponsesByIds(followerIds,pageNumber,pageSize));
     }
 
     @GetMapping("/{userId}/followings")
@@ -43,7 +52,8 @@ public class ProfileController {
                                                                   @RequestParam(defaultValue = AppConstant.PAGE_NUMBER, required = false) Integer pageNumber,
                                                                   @RequestParam(defaultValue = AppConstant.PAGE_SIZE_PROFILE, required = false) Integer pageSize){
 
-        return  ResponseEntity.ok(profileService.getFollowingsWithPagination(userId,pageNumber,pageSize));
+        List<Long> followingIds = profileService.getFollowings(userId);
+        return  ResponseEntity.ok(profileService.getProfileDtoResponsesByIds(followingIds,pageNumber,pageSize));
     }
 
     @PostMapping("/follow")
@@ -70,5 +80,17 @@ public class ProfileController {
     public void deleteUser( ){
         Long ownerId = authenticatedUserUtil.getCurrentUserId();
         profileService.deleteProfile(ownerId);
+    }
+
+
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(@RequestHeader("Authorization") String bearerToken,
+                                    @RequestHeader("X-Refresh-Token") String refreshToken) {
+
+        String accessToken = jwtService.extractToken(bearerToken);
+        jwtService.blacklistAccessToken(accessToken);
+        refreshTokenService.deleteRefreshToken(refreshToken);
+
+        return ResponseEntity.ok("Logged out successfully");
     }
 }

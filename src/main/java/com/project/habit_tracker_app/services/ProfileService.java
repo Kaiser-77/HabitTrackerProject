@@ -80,46 +80,19 @@ public class ProfileService {
         followerRepository.deleteByUserIdAndFollowedId(userId,unfollowingId);
     }
 
-    public List<Profile> getFollowers(Long profileId) {
-        List<Long> profileIds = followerRepository.findFollowerProfileIds(profileId);
-        return profileRepository.findAllById(profileIds);
+
+
+    public List<Long> getFollowers(Long profileId) {
+        return followerRepository.findFollowerProfileIds(profileId);
     }
-    public ProfilePageResponse getFollowersWithPagination(Long profileId, Integer pageNumber, Integer pageSize){
 
-        List<Long> profileIds = followerRepository.findFollowerProfileIds(profileId);
+    public List<Long> getFollowings(Long profileId) {
+        return followerRepository.findFollowingProfileIds(profileId);
 
-        Pageable pageable = PageRequest.of(pageNumber,pageSize);
-
-        Page<Profile> pageProfileList = profileRepository.findByIdIn(profileIds, pageable);
-        List<Profile> profileList = pageProfileList.getContent();
-
-        // Profile To ProfileNameDto
-        List<ProfileDto> profileDtoList = new ArrayList<>();
-        for(Profile profile : profileList){
-            ProfileDto profileDto = new ProfileDto(
-                    profile.getId(),
-                    profile.getUserName(),
-                    profile.getName(),
-                    profile.getProfilePic()
-            );
-            profileDtoList.add(profileDto);
-        }
-
-        return new ProfilePageResponse(profileDtoList, pageNumber, pageSize,
-                pageProfileList.getTotalElements(), pageProfileList.getTotalPages(), pageProfileList.isLast());
     }
 
 
-
-
-    public List<Profile> getFollowings(Long profileId) {
-        List<Long> profileIds = followerRepository.findFollowingProfileIds(profileId);
-        return profileRepository.findAllById(profileIds);
-
-    }
-    public ProfilePageResponse getFollowingsWithPagination(Long profileId, Integer pageNumber, Integer pageSize){
-
-        List<Long> profileIds = followerRepository.findFollowingProfileIds(profileId);
+    public ProfilePageResponse getProfileDtoResponsesByIds(List<Long> profileIds, Integer pageNumber, Integer pageSize){
 
         Pageable pageable = PageRequest.of(pageNumber,pageSize);
 

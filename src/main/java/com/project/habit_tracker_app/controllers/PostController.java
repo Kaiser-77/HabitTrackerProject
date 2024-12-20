@@ -36,9 +36,9 @@ public class PostController {
                                                       @RequestParam(defaultValue = AppConstant.SORT_BY_TIME, required = false) String sortBy,
                                                       @RequestParam(defaultValue = AppConstant.SORT_DIR, required = false) String dir){
         Long ownerId = authenticatedUserUtil.getCurrentUserId();
-        List<Profile> followingProfiles = profileService.getFollowings(ownerId);
+        List<Long> followingProfileIds = profileService.getFollowings(ownerId);
 
-        return ResponseEntity.ok(postService.getFeedPostWithPaginationAndSorting(followingProfiles,pageNumber,pageSize,sortBy,dir));
+        return ResponseEntity.ok(postService.getFeedPostWithPaginationAndSorting(followingProfileIds,pageNumber,pageSize,sortBy,dir));
     }
 
     // get post likes
