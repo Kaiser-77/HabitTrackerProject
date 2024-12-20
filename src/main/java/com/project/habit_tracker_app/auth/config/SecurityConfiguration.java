@@ -1,7 +1,9 @@
 package com.project.habit_tracker_app.auth.config;
 
 
+import com.project.habit_tracker_app.auth.AuthenticationEntryPoint.CustomAuthenticationEntryPoint;
 import com.project.habit_tracker_app.auth.services.AuthFilterService;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,10 +24,14 @@ public class SecurityConfiguration {
 
     private final AuthFilterService authFilterService;
     private final AuthenticationProvider authenticationProvider;
+    private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
+
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception{
         http.csrf(AbstractHttpConfigurer::disable)
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint(customAuthenticationEntryPoint))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**", "/forgotPassword/**")
                         .permitAll()
@@ -34,7 +40,16 @@ public class SecurityConfiguration {
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider)
-                .addFilterBefore(authFilterService, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(authFilterService, UsernamePasswordAuthenticationFilter.class)
+
+                // logout
+                .logout(logout -> logout
+                .logoutUrl("/logout")    // Define the logout URL
+                .logoutSuccessHandler((request, response, authentication) -> {
+                    // Customize the response on successful logout
+                    response.setStatus(HttpServletResponse.SC_OK);
+                    response.getWriter().write("Logged out successfully.");
+                }));
 
         return http.build();
     }

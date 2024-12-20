@@ -51,18 +51,6 @@ public class AuthController {
     }
 
 
-    @PostMapping("/logout")
-    public ResponseEntity<?> logout(@RequestHeader("Authorization") String bearerToken,
-                                    @RequestHeader("X-Refresh-Token") String refreshToken) {
-
-        String accessToken = jwtService.extractToken(bearerToken);
-        jwtService.blacklistAccessToken(accessToken);
-        refreshTokenService.deleteRefreshToken(refreshToken);
-
-        return ResponseEntity.ok("Logged out successfully");
-    }
-
-
 
     @PostMapping("/verifyRegistration/{otp}")
     public ResponseEntity<AuthResponse> verifyRegistration(@PathVariable String otp) {
